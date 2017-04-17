@@ -1,95 +1,54 @@
-on timerStartedForTaskRecord(tskRecordID)
-	
-	(*
-	tell application "Tyme2"
-		GetRecordWithID tskRecordID
-		set tskID to relatedTaskID of lastFetchedTaskRecord
-		set tsk to the first item of (every task of every project whose id = tskID)
-		set tskName to name of tsk
-		say tskName
+activate "OmniFocus"
+tell application "OmniFocus"
+	tell front window
+		set my_sel to selected trees of content
+		repeat with ptaskt in reverse of my_sel
+			set ptask to value of ptaskt
+			set thisEstimate to estimated minutes of ptask
+			if thisEstimate is not missing value then
+				my tell_tyme(ptask)
+			end if
+		end repeat
 	end tell
-*)
-	
-end timerStartedForTaskRecord
+end tell
 
-on timerStoppedForTaskRecord(tskRecordID)
-	tell application "Tyme2"
-		GetRecordWithID tskRecordID
-		if recordType of lastFetchedTaskRecord is equal to "timed" then
-			set prjid to relatedProjectID of lastFetchedTaskRecord
-			set tskid to relatedTaskID of lastFetchedTaskRecord
-			set prj to the first item of (every project whose id = prjid)
-			set tsk to the first item of (every task of every project whose id = tskid)
-			set tname to name of tsk
-			set pname to name of prj
-			set nt to note of lastFetchedTaskRecord
-			set strt to (timeStart of lastFetchedTaskRecord)
-			set ed to (timeEnd of lastFetchedTaskRecord)
-			set strttime to time string of strt
-			set edtime to time string of ed
-			set cat to tname & " today " & strttime & "-" & edtime as string
-			tell application "Fantastical 2"
-				parse sentence cat notes nt calendarName pname with add immediately
-			end tell
-		end if
-	end tell
-end timerStoppedForTaskRecord
+on tell_tyme(my_selection)
+	tell application "OmniFocus"
+		tell front window
+			set task_name to name of my_selection
+			set havedue to false
+			if due date of my_selection is not missing value then
+				set due to due date of my_selection
+				set havedue to true
+			end if
 
-on timeoutDetectedForTaskRecord(tskRecordID)
-	
-	(*
-	tell application "Tyme2"
-		GetRecordWithID tskRecordID
-		set tskid to relatedTaskID of lastFetchedTaskRecord
-		set tsk to the first item of (every task of every project whose id = tskid)
-		set tskName to name of tsk
-		say tskName
-	end tell
-*)
-	
-end timeoutDetectedForTaskRecord
+			if (estimated minutes of my_selection is not missing value) then
+				set esti to (estimated minutes of my_selection) * 60 as real
+			else
+				set esti to 0 as real
+			end if
+			set proj_name to name of containing project of my_selection
 
-on projectCompletedChanged(projectID)
-	
-	(*
-	tell application "Tyme2"
-		set prj to the first item of (every project whose id = projectID)
-		set prjName to name of prj
-		say prjName
-	end tell
-*)
-	
-end projectCompletedChanged
+			tell application "Tyme2"
+				set make_new_project to true
+				set make_new_task to true
+				repeat with existed_project in every project
+					if ((name of existed_project) is proj_name) then set make_new_project to false
+					repeat with existed_task in every task in existed_project
+						if ((name of existed_task) is task_name and (completed of existed_task) is false) then set make_new_task to false
+					end repeat
 
-on taskCompletedChanged(tskid)
-	tell application "Tyme2"
-		set tsk to the first item of (every task of every project whose id = tskid)
-		set prj to the first item of (every project whose id = (relatedProjectID of tsk))
-		set pname to name of prj
-		set tname to name of tsk
-		set cd to completedDate of tsk
-		tell application "OmniFocus"
-			tell default document
-				set opro to the first item of (flattened projects whose name is pname)
-				set otsk to the first item of ((flattened tasks of opro) whose name is tname)
-				set completion date of otsk to cd
+				end repeat
+				if (make_new_project) then make new project with properties {name:proj_name}
+
+				if (make_new_task) then
+					if (havedue is true) then
+						make new task of (project proj_name) with properties {name:task_name, taskType:"timed", completed:false, timedPlannedDuration:esti, dueDate:due}
+					else
+						make new task of (project proj_name) with properties {name:task_name, taskType:"timed", completed:false, timedPlannedDuration:esti}
+					end if
+				end if
 			end tell
 		end tell
-		
-		
-		(*
-		tell application "Reminders"
-			set opro to the first item of (lists whose name is pname)
-			try
-				set otsk to the first item of ((reminders of opro) whose name is tname)
-				set completion date of otsk to cd
-			on error
-				activate application "Reminders"
-				tell application "System Events" to keystroke "z" using {command down}
-				activate application "Tyme2"
-			end try
-		end tell
-		*)
-		
 	end tell
-end taskCompletedChanged
+end tell_tyme
