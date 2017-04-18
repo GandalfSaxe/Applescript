@@ -4,17 +4,6 @@ tell application "OmniFocus"
 		set my_sel to selected trees of content
 		repeat with ptaskt in reverse of my_sel
 			set ptask to value of ptaskt
-			set ftask to flattened tasks of ptask
-			set haschild to false
-			repeat with my_selection in ftask
-				if (number of tasks of my_selection = 0 and completed of my_selection is not true) then
-					set thisEstimate to estimated minutes of my_selection
-					if thisEstimate is not missing value then
-						my tell_tyme(my_selection)
-						set haschild to true
-					end if
-				end if
-			end repeat
 			set thisEstimate to estimated minutes of ptask
 			if thisEstimate is not missing value then
 				my tell_tyme(ptask)
