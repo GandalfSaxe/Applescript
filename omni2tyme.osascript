@@ -4,10 +4,13 @@ tell application "OmniFocus"
 		set my_sel to selected trees of content
 		repeat with ptaskt in reverse of my_sel
 			set ptask to value of ptaskt
-			set thisEstimate to estimated minutes of ptask
-			if thisEstimate is not missing value then
-				my tell_tyme(ptask)
-			end if
+			try
+				set thisEstimate to estimated minutes of ptask
+				if thisEstimate is not missing value then
+					my tell_tyme(ptask)
+				end if
+			on error
+			end try
 		end repeat
 	end tell
 end tell
