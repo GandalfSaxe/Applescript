@@ -1,0 +1,33 @@
+activate "OmniFocus"
+tell application "OmniFocus"
+	tell front window
+		set total to 0
+		set my_sel to selected trees of content
+		set numItems to count of my_sel
+
+		repeat with ptaskt in my_sel
+			set ptask to value of ptaskt
+			try
+				set thisEstimate to estimated minutes of ptask
+				if thisEstimate is not missing value then
+					set total to total + thisEstimate
+				end if
+			on error
+				set numItems to numItems - 1
+			end try
+		end repeat
+	end tell
+end tell
+
+set modMinutes to (total mod 60)
+set totalHours to (total div 60)
+
+if numItems is 1 then
+	set itemSuffix to ""
+else
+	set itemSuffix to "s"
+end if
+
+set alertText to totalHours & "h " & modMinutes & "m total for " & numItems & " item" & itemSuffix as string
+
+tell application "OmniFocus" to display dialog alertText with icon 1 buttons {"OK"} default button "OK"
